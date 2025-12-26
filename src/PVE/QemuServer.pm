@@ -61,6 +61,7 @@ use PVE::QemuServer::Helpers
     qw(config_aware_timeout get_iscsi_initiator_name min_version kvm_user_version windows_version);
 use PVE::QemuServer::Cloudinit;
 use PVE::QemuServer::CGroup;
+use PVE::QemuServer::CPUAffinityServiceClient;
 use PVE::QemuServer::CPUConfig qw(
     print_cpu_device
     get_cpu_options
@@ -5567,6 +5568,11 @@ sub vm_start_nolock {
         $ENV{PVE_MIGRATED_FROM} = $migratedfrom;
     }
 
+    # XXX: we might want to check $conf for an disable_auto_affinity
+    # there might be cases, where the user want's to disable it
+    # for a specific VM
+    PVE::QemuServer::CPUAffinityServiceClient::ping($vmid);
+
     PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);
 
     my $forcemachine = $params->{forcemachine};
@@ -5959,6 +5965,11 @@ sub vm_start_nolock {
     } elsif (!$conf->{vmstate}) {
         remove_left_over_vmstate_opts($vmid, $conf);
     }
+
+    # XXX: we might want to check $conf for an disable_auto_affinity
+    # there might be cases, where the user want's to disable it
+    # for a specific VM
+    PVE::QemuServer::CPUAffinityServiceClient::update_affinity($vmid);
 
     PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'post-start');
 
